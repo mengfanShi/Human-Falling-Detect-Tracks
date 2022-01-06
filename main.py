@@ -15,10 +15,7 @@ from fn import draw_single
 from Track.Tracker import Detection, Tracker
 from ActionsEstLoader import TSSTG
 
-#source = '../Data/test_video/test7.mp4'
-#source = '../Data/falldata/Home/Videos/video (2).avi'  # hard detect
-source = '../Data/falldata/Home/Videos/video (1).avi'
-#source = 2
+source = 0
 
 
 def preproc(image):
@@ -52,6 +49,8 @@ if __name__ == '__main__':
                         help='Show all bounding box from detection.')
     par.add_argument('--show_skeleton', default=True, action='store_true',
                         help='Show skeleton pose.')
+    par.add_argument('--visualize', action='store_true',
+                        help='Show the progress.')
     par.add_argument('--save_out', type=str, default='',
                         help='Save display to video file.')
     par.add_argument('--device', type=str, default='cuda',
@@ -105,6 +104,7 @@ if __name__ == '__main__':
 
         # Detect humans bbox in the frame with detector model.
         detected = detect_model.detect(frame, need_resize=False, expand_bb=10)
+        # detected(num_people, 7[bbox + conference + class])]
 
         # Predict each tracks bbox of current frame from previous frames information with Kalman filter.
         tracker.predict()
@@ -118,7 +118,6 @@ if __name__ == '__main__':
             #detected = non_max_suppression(detected[None, :], 0.45, 0.2)[0]
             # Predict skeleton pose of each bboxs.
             poses = pose_model.predict(frame, detected[:, 0:4], detected[:, 4])
-
             # Create Detections object.
             detections = [Detection(kpt2bbox(ps['keypoints'].numpy()),
                                     np.concatenate((ps['keypoints'].numpy(),
@@ -133,7 +132,7 @@ if __name__ == '__main__':
         # Update tracks by matching each track information of current and previous frame or
         # create a new track if no matched.
         tracker.update(detections)
-
+        print("Detect Human Nums:{}".format(len(tracker.tracks)))
         # Predict Actions of each track.
         for i, track in enumerate(tracker.tracks):
             if not track.is_confirmed():
@@ -176,9 +175,10 @@ if __name__ == '__main__':
         if outvid:
             writer.write(frame)
 
-        cv2.imshow('frame', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        if args.visualize:
+            cv2.imshow('frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
     # Clear resource.
     cam.stop()

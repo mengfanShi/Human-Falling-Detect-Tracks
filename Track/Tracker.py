@@ -48,6 +48,29 @@ class Detection(object):
         ret[2] /= ret[3]
         return ret
 
+    def to_humancenter(self):
+        """Get (x_humancenter, y_humancenter, aspect ratio, height).
+        """
+        ret = self.to_xyah()
+        kpt = self.keypoints
+        '''
+        Human structure center point 
+        averange of [head(nose), shoulders, Hips]
+        '''
+        index = [0, 1, 2, 7, 8]
+        x_center = 0
+        y_center = 0
+        num = 0
+        for i in index:
+            if kpt[i, 0] == 0 and kpt[i, 1] == 0:
+                continue
+            num += 1
+            x_center += kpt[i, 0]
+            y_center += kpt[i, 1]
+        ret[0] = x_center / num
+        ret[1] = y_center / num 
+        return ret
+
 
 class Track:
     def __init__(self, mean, covariance, track_id, n_init, max_age=30, buffer=30):
@@ -90,8 +113,10 @@ class Track:
     def update(self, kf, detection):
         """Perform Kalman filter measurement update step.
         """
+        # self.mean, self.covariance = kf.update(self.mean, self.covariance,
+        #                                        detection.to_xyah())
         self.mean, self.covariance = kf.update(self.mean, self.covariance,
-                                               detection.to_xyah())
+                                               detection.to_humancenter())
         self.keypoints_list.append(detection.keypoints)
 
         self.hist += 1
@@ -185,7 +210,8 @@ class Tracker:
     def _initiate_track(self, detection):
         if detection.confidence < 0.4:
             return
-        mean, covariance = self.kf.initiate(detection.to_xyah())
+        # mean, covariance = self.kf.initiate(detection.to_xyah())
+        mean, covariance = self.kf.initiate(detection.to_humancenter())
         self.tracks.append(Track(mean, covariance, self._next_id, self.n_init, self.max_age))
         self._next_id += 1
 
