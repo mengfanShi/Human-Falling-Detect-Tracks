@@ -48,27 +48,35 @@ class Detection(object):
         ret[2] /= ret[3]
         return ret
 
+    # def to_humancenter(self):
+    #     """Get (x_humancenter, y_humancenter, aspect ratio, height).
+    #     """
+    #     index = [0, 1, 2, 7, 8]
+    #     '''
+    #     Human structure center point 
+    #     averange of [head(nose), shoulders, Hips]
+    #     '''
+    #     kpt = self.keypoints[index, :2]
+    #     ex = 20
+    #     ret = np.array((kpt[:, 0].min() - ex, kpt[:, 1].min() - ex,
+    #                  kpt[:, 0].max() + ex, kpt[:, 1].max() + ex))
+    #     ret[2:] = ret[2:] - ret[:2]
+    #     ret[:2] += ret[2:] / 2
+    #     ret[2] /= ret[3]
+    #     return ret
+
     def to_humancenter(self):
         """Get (x_humancenter, y_humancenter, aspect ratio, height).
         """
         ret = self.to_xyah()
-        kpt = self.keypoints
+        index = [0, 1, 2, 7, 8]
         '''
         Human structure center point 
         averange of [head(nose), shoulders, Hips]
         '''
-        index = [0, 1, 2, 7, 8]
-        x_center = 0
-        y_center = 0
-        num = 0
-        for i in index:
-            if kpt[i, 0] == 0 and kpt[i, 1] == 0:
-                continue
-            num += 1
-            x_center += kpt[i, 0]
-            y_center += kpt[i, 1]
-        ret[0] = x_center / num
-        ret[1] = y_center / num 
+        kpt = self.keypoints[index, :2]
+        ret[0] = kpt[:, 0].mean()
+        ret[1] = kpt[:, 1].mean()
         return ret
 
 
