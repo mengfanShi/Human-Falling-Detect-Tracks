@@ -1,4 +1,5 @@
 import os
+from turtle import color
 import cv2
 import torch
 import screeninfo
@@ -110,8 +111,8 @@ class main:
         self.main_screen = get_monitor_from_coord(master.winfo_x(), master.winfo_y())
 
         self.width = int(self.main_screen.width * .5)
-        self.height = int(self.main_screen.height * .5)
-        self.master.geometry('{}x{}'.format(self.width + 10, self.height + 10))
+        self.height = int(self.main_screen.height * .6)
+        self.master.geometry('{}x{}'.format(self.width, self.height + 10))
         
         self.cam = None
         self.canvas = tk.Canvas(master, width=self.width, height=self.height)
@@ -121,7 +122,6 @@ class main:
         self.resize_fn = ResizePadding(416, 416)
         self.models = Models(device=device)
 
-        self.filepath = 0
         self.select_cam()
         self.delay = 15
         self.load_cam(self.filepath)
@@ -135,17 +135,32 @@ class main:
     def select_cam(self):
         menubar = tk.Menu(self.master)
         menubar.add_command(label='Load', command=self.get_filepath)
-        menubar.add_command(label='Run', command=self.master.quit)
+        menubar.add_command(label='Run', command=self.use_camera)
+        menubar.add_command(label='Exit', command=self.close_camera)
         self.master.config(menu=menubar)
 
-        string = '\n\nHuman Fall Detection\n\nClick Load to use the video\n\nClick Run to use the camera\n\n'
+        string1 = 'Human Fall Detection'
+        string2 = 'Click Load to use the video\nClick Run to use the camera\nClick Exit to exit the program'
+        self.canvas.create_text(int(self.width/2), int(self.height/3),\
+            text=string1, font=tkFont.Font(family='Times', weight='bold', size=55), fill='red')
         self.canvas.create_text(int(self.width/2), int(self.height/2),\
-            text=string, font=tkFont.Font(family='Times NewRoman', weight='bold', size=40))
+            text=string2, font=tkFont.Font(family='Times', size=35))
         self.master.mainloop()
 
     def get_filepath(self):
         self.filepath = filedialog.askopenfilename()
+        if self.filepath:
+            self.master.quit()
+    
+    def use_camera(self):
+        self.filepath = 0
         self.master.quit()
+
+    def close_camera(self):
+        if self.cam:
+            self.cam.stop()
+            self.cam.__del__()
+        self.master.destroy()
 
     def load_cam(self, source):
         if self.cam:
